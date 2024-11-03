@@ -1,0 +1,60 @@
+name: Build and Push to Cachix
+on:
+  push:
+    branches:
+      - main
+  workflow_run:
+    workflows: ['Update Inputs']
+    types: [completed]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish-x86_64:
+    name: Push to Binary Cache (X86-64)
+    runs-on: x86_64-docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-22.04
+    steps:
+    - uses: https://github.com/DeterminateSystems/nix-installer-action@main
+      with:
+        extra-conf: |
+          access-tokens = ${{ secrets.GH_PUBLIC_REPO_ACCESS_TOKEN }}
+
+    - uses: https://github.com/DeterminateSystems/magic-nix-cache-action@main
+
+    - uses: https://github.com/cachix/cachix-action@v15
+      with:
+        name: ${{ vars.CACHIX_CACHE_NAME }}
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+    - uses: actions/checkout@v4
+
+    - name: Build and push flake output
+      run: |
+        nix build -L .#autobrr
+
+  publish-aarch64:
+    name: Push to Binary Cache (aarch64)
+    runs-on: aarch64-docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-22.04
+    steps:
+    - uses: https://github.com/DeterminateSystems/nix-installer-action@main
+      with:
+        extra-conf: |
+          access-tokens = ${{ secrets.GH_PUBLIC_REPO_ACCESS_TOKEN }}
+
+    - uses: https://github.com/DeterminateSystems/magic-nix-cache-action@main
+
+    - uses: https://github.com/cachix/cachix-action@v15
+      with:
+        name: ${{ vars.CACHIX_CACHE_NAME }}
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+    - uses: actions/checkout@v4
+
+    - run: |
+        nix build -L .#autobrr
+
