@@ -22,12 +22,12 @@ jobs:
         extra-conf: |
           access-tokens = ${{ secrets.GH_PUBLIC_REPO_ACCESS_TOKEN }}
 
-    - uses: https://github.com/DeterminateSystems/magic-nix-cache-action@main
-
     - uses: https://github.com/cachix/cachix-action@v15
       with:
         name: ${{ vars.CACHIX_CACHE_NAME }}
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+        skipAddingSubstituter: true
+        pathsToPush: autobrr
 
     - uses: actions/checkout@v4
 
@@ -46,12 +46,12 @@ jobs:
         extra-conf: |
           access-tokens = ${{ secrets.GH_PUBLIC_REPO_ACCESS_TOKEN }}
 
-    - uses: https://github.com/DeterminateSystems/magic-nix-cache-action@main
-
     - uses: https://github.com/cachix/cachix-action@v15
       with:
         name: ${{ vars.CACHIX_CACHE_NAME }}
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+        skipAddingSubstituter: true
+        pathsToPush: autobrr
 
     - uses: actions/checkout@v4
 
