@@ -13,6 +13,7 @@
       };
     in
     {
+      nixosModules.default = import ./modules;
       overlays.default = import ./overlay.nix;
       packages.x86_64-linux.autobrr = pkgs_x86_64-linux.callPackage ./packages/autobrr { };
       packages.aarch64-linux.autobrr = pkgs_aarch64-linux.callPackage ./packages/autobrr { };
