@@ -3,93 +3,92 @@ let
   cfg = config.recipes.conduwuit;
 
   format = pkgs.formats.toml { };
-  configFile = format.generate "conduwuit.toml" cfg.settings;
-in
-{
-  meta.maintainers = with lib.maintainers; [ adtya ];
-  options.recipes.conduwuit = {
-    enable = lib.mkEnableOption "conduwuit";
+  conduitSubmodule = { name, ... }: {
+    options = {
+      enable = lib.mkEnableOption "conduwuit";
 
-    extraEnvironment = lib.mkOption {
-      type = lib.types.attrsOf lib.types.str;
-      description = "Extra Environment variables to pass to the conduwuit server.";
-      default = { };
-      example = { RUST_BACKTRACE = true; };
-    };
+      extraEnvironment = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        description = "Extra Environment variables to pass to the conduwuit server.";
+        default = { };
+        example = { RUST_BACKTRACE = true; };
+      };
 
-    environmentFiles = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = null;
-      example = [ "/etc/conduwit/env_file" ];
-      description = "Files containing environment variables in the form KEY=VALUE";
-    };
+      environmentFiles = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = null;
+        example = [ "/etc/conduwit/env_file" ];
+        description = "Files containing environment variables in the form KEY=VALUE";
+      };
 
-    package = lib.mkPackageOption pkgs "conduwuit" { };
+      package = lib.mkPackageOption pkgs "conduwuit" { };
 
-    settings = lib.mkOption {
-      type = lib.types.submodule {
-        freeformType = format.type;
-        options = {
-          global = {
-            server_name = lib.mkOption {
-              type = lib.types.str;
-              example = "example.com";
-              description = "The server_name is the name of this server. It is used as a suffix for user # and room ids.";
-            };
-            address = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ "127.0.0.1" "::1" ];
-              description = "Address(s) to listen on for connections by the reverse proxy/tls terminator.";
-            };
-            port = lib.mkOption {
-              type = lib.types.port;
-              default = 6167;
-              description = "The port Conduit will be running on. You need to set up a reverse proxy in your web server (e.g. apache or nginx), so all requests to /_matrix on port 443 and 8448 will be forwarded to the Conduit instance running on this port";
-            };
-            database_path = lib.mkOption {
-              type = lib.types.str;
-              default = "/var/lib/conduwuit/";
-              readOnly = true;
-              description = ''
-                Path to the conduwuit database, the directory where conduwuit will save its data.
-                Note that due to using the DynamicUser feature of systemd, this value should not be changed
-                and is set to be read only.
-              '';
-            };
-            database_backend = lib.mkOption {
-              type = lib.types.enum [ "sqlite" "rocksdb" ];
-              default = "rocksdb";
-              example = "sqlite";
-              description = ''
-                The database backend for the service. Switching it on an existing
-                instance will require manual migration of data.
-              '';
+      settings = lib.mkOption {
+        type = lib.types.submodule {
+          freeformType = format.type;
+          options = {
+            global = {
+              server_name = lib.mkOption {
+                type = lib.types.str;
+                example = "example.com";
+                description = "The server_name is the name of this server. It is used as a suffix for user # and room ids.";
+              };
+              address = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ "127.0.0.1" "::1" ];
+                description = "Address(s) to listen on for connections by the reverse proxy/tls terminator.";
+              };
+              port = lib.mkOption {
+                type = lib.types.port;
+                default = 6167;
+                description = "The port Conduit will be running on. You need to set up a reverse proxy in your web server (e.g. apache or nginx), so all requests to /_matrix on port 443 and 8448 will be forwarded to the Conduit instance running on this port";
+              };
+              database_path = lib.mkOption {
+                type = lib.types.str;
+                default = "/var/lib/conduwuit-${name}/";
+                readOnly = true;
+                description = ''
+                  Path to the conduwuit database, the directory where conduwuit will save its data.
+                  Note that due to using the DynamicUser feature of systemd, this value should not be changed
+                  and is set to be read only.
+                '';
+              };
+              database_backend = lib.mkOption {
+                type = lib.types.enum [ "sqlite" "rocksdb" ];
+                default = "rocksdb";
+                example = "sqlite";
+                description = ''
+                  The database backend for the service. Switching it on an existing
+                  instance will require manual migration of data.
+                '';
+              };
             };
           };
         };
+        default = { };
+        description = ''
+          Generates the conduwuit.toml configuration file. Refer to
+          <https://conduwuit.puppyirl.gay/configuration/examples.html#example-configuration>
+          for details on supported values.
+          Note that database_path can not be edited because the service's reliance on systemd StateDir.
+        '';
       };
-      default = { };
-      description = ''
-        Generates the conduwuit.toml configuration file. Refer to
-        <https://conduwuit.puppyirl.gay/configuration/examples.html#example-configuration>
-        for details on supported values.
-        Note that database_path can not be edited because the service's reliance on systemd StateDir.
-      '';
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    systemd.services.conduwuit = {
-      description = "Conduwuit Matrix Server";
+  systemdService = name: serviceDefinition:
+    let configFile = format.generate "conduwuit-${name}.toml" serviceDefinition.settings; in {
+      enable = serviceDefinition.enable;
+      description = "Conduwuit Matrix Server (${name})";
       documentation = [ "https://conduwuit.puppyirl.gay" ];
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
       after = [ "network-online.target" ];
-      environment = cfg.extraEnvironment;
+      environment = serviceDefinition.extraEnvironment;
       serviceConfig = {
         Type = "notify";
         DynamicUser = true;
-        EnvironmentFile = cfg.environmentFiles;
+        EnvironmentFile = serviceDefinition.environmentFiles;
         AmbientCapabilities = [ ];
         CapabilityBoundingSet = [ ];
         DevicePolicy = "closed";
@@ -134,14 +133,27 @@ in
           "~@ipc"
         ];
         SystemCallErrorNumber = "EPERM";
-        StateDirectory = "conduwuit";
-        RuntimeDirectory = "conduwuit";
+        StateDirectory = "conduwuit-${name}";
+        RuntimeDirectory = "conduwuit-${name}";
         RuntimeDirectoryMode = "0750";
-        ExecStart = "${cfg.package}/bin/conduit --config ${configFile}";
+        ExecStart = "${serviceDefinition.package}/bin/conduit --config ${configFile}";
         Restart = "on-failure";
         RestartSec = 10;
         StartLimitBurst = 5;
       };
     };
+  mkSystemdService = (name: serviceDefinition: lib.nameValuePair "conduwuit-${name}" (systemdService name serviceDefinition));
+in
+{
+  meta.maintainers = with lib.maintainers; [ adtya ];
+  options.recipes.conduwuit.instances = lib.mkOption {
+    type = lib.types.attrsOf (lib.types.submodule conduitSubmodule);
+    default = { };
+    defaultText = lib.literalExpression { };
+    description = "Configuration for a conduwuit instance";
+  };
+
+  config = lib.mkIf (cfg.instances != { }) {
+    systemd.services = lib.mapAttrs' mkSystemdService cfg.instances;
   };
 }
