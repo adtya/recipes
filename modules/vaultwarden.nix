@@ -66,7 +66,6 @@ in
       after = [ "network-online.target" ];
       environment = cfg.config;
       serviceConfig = {
-        Type = "notify";
         DynamicUser = true;
         EnvironmentFile = cfg.environmentFiles;
         AmbientCapabilities = [ "" ];
