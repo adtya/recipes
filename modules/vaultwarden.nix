@@ -8,7 +8,23 @@ in
     enable = lib.mkEnableOption "vaultwarden";
 
     config = lib.mkOption {
-      type = lib.types.attrsOf lib.types.str;
+      type = lib.types.submodule {
+        freeformType = lib.types.attrsOf lib.types.str;
+        options = {
+          WEB_VAULT_FOLDER = lib.mkOption {
+            type = lib.types.str;
+            default = "${cfg.webVaultPackage}/share/vaultwarden/vault";
+            readOnly = true;
+            description = "Web Vault folder. derived from webVaultPackage config option";
+          };
+          DATA_FOLDER = lib.mkOption {
+            type = lib.types.str;
+            default = "/var/lib/vaultwarden";
+            readOnly = true;
+            description = "Data directory used by vaultwarden. it cannot be changed as it's using systemd's StateDirectory";
+          };
+        };
+      };
       description = "Vaultwarden is configured using environment variables";
       default = {
         ROCKET_ADDRESS = "::1"; # default to localhost
@@ -32,6 +48,13 @@ in
       example = "postgresql";
       description = "The kind of database backend to use";
     };
+
+    webVaultPackage = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.vaultwarden.webvault;
+      defaultText = lib.literalExpression "pkgs.vaultwarden.webvault";
+      description = "Web vault package to use.";
+    };
   };
 
   config = lib.mkIf (cfg.enable == true) {
@@ -41,7 +64,7 @@ in
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
       after = [ "network-online.target" ];
-      environment = cfg.environment;
+      environment = cfg.config;
       serviceConfig = {
         Type = "notify";
         DynamicUser = true;
