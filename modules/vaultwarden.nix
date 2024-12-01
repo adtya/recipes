@@ -7,11 +7,14 @@ in
   options.recipes.vaultwarden = {
     enable = lib.mkEnableOption "vaultwarden";
 
-    environment = lib.mkOption {
+    config = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       description = "Vaultwarden is configured using environment variables";
-      default = { };
-      example = { RUST_BACKTRACE = true; };
+      default = {
+        ROCKET_ADDRESS = "::1"; # default to localhost
+        ROCKET_PORT = 8222;
+      };
+      example = { DOMAIN = "https://example.com"; SIGNUPS_ALLOWED = false; };
     };
 
     environmentFiles = lib.mkOption {
@@ -22,6 +25,13 @@ in
     };
 
     package = lib.mkPackageOption pkgs "vaultwarden" { };
+
+    databaseBackend = lib.mkOption {
+      type = lib.types.enum [ "sqlite" "mysql" "postgresql" ];
+      default = "sqlite";
+      example = "postgresql";
+      description = "The kind of database backend to use";
+    };
   };
 
   config = lib.mkIf (cfg.enable == true) {
@@ -86,7 +96,7 @@ in
         RuntimeDirectory = "vaultwarden";
         RuntimeDirectoryMode = "0700";
         UMask = "0077";
-        ExecStart = lib.getExe cfg.package;
+        ExecStart = lib.getExe (cfg.package.override { dbBackend = cfg.databaseBackend; });
         Restart = "on-failure";
         RestartSec = 10;
         StartLimitBurst = 5;

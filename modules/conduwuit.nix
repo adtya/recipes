@@ -89,8 +89,9 @@ let
         Type = "notify";
         DynamicUser = true;
         EnvironmentFile = serviceDefinition.environmentFiles;
-        AmbientCapabilities = [ ];
-        CapabilityBoundingSet = [ ];
+        AmbientCapabilities = [ "" ];
+        CapabilityBoundingSet = [ "" ];
+        DeviceAllow = [ "" ];
         DevicePolicy = "closed";
         LockPersonality = true;
         MemoryDenyWriteExecute = true;
@@ -134,9 +135,11 @@ let
         ];
         SystemCallErrorNumber = "EPERM";
         StateDirectory = "conduwuit-${name}";
+        StateDirectoryMode = "0700";
         RuntimeDirectory = "conduwuit-${name}";
-        RuntimeDirectoryMode = "0750";
-        ExecStart = "${serviceDefinition.package}/bin/conduit --config ${configFile}";
+        RuntimeDirectoryMode = "0700";
+        UMask = "0077";
+        ExecStart = "${lib.getExe serviceDefinition.package} --config ${configFile}";
         Restart = "on-failure";
         RestartSec = 10;
         StartLimitBurst = 5;
