@@ -9,7 +9,7 @@ in
     enable = lib.mkEnableOption "ezbookkeeping";
     package = lib.mkPackageOption pkgs "ezbookkeeping" "backend" { };
 
-    config = lib.mkOption {
+    configuration = lib.mkOption {
       type = lib.types.submodule {
         freeformType = format.type;
         options = {
@@ -78,7 +78,7 @@ in
     };
   };
 
-  config = lib.mkIf (cfg.enable == true) let configFile = format.generate "ezbookkeeping.ini" cfg.config;
+  config = lib.mkIf (cfg.enable == true) let configFile = format.generate "ezbookkeeping.ini" cfg.configuration;
   in {
   systemd.services.ezbookkeeping = {
     description = "Ezbookkeeping Server";
