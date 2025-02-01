@@ -104,7 +104,7 @@ in
           let
             configFile = configFormat.generate "ezbookkeeping.ini" cfg.configuration;
           in
-          "${lib.getExe cfg.package} --conf-path ${configFile}";
+          "${lib.getExe cfg.package} --conf-path ${configFile} server run";
         Restart = "on-failure";
         RestartSec = 10;
         StartLimitBurst = 5;
