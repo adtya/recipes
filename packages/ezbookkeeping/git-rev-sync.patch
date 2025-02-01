@@ -1,0 +1,23 @@
+:100644 100644 0f0a282f 00000000 M	vite.config.js
+
+diff --git a/vite.config.js b/vite.config.js
+index 0f0a282f..a9f45b96 100644
+--- a/vite.config.js
++++ b/vite.config.js
+@@ -4,7 +4,6 @@ import { defineConfig } from 'vite'
+ import vue from '@vitejs/plugin-vue';
+ import vuetify from 'vite-plugin-vuetify';
+ import { VitePWA } from 'vite-plugin-pwa';
+-import git from 'git-rev-sync';
+ 
+ import packageFile from './package.json';
+ import thirdPartyLicenseFile from './third-party-dependencies.json';
+@@ -24,7 +23,7 @@ export default defineConfig(async () => {
+         define: {
+             __EZBOOKKEEPING_VERSION__: JSON.stringify(packageFile.version),
+             __EZBOOKKEEPING_BUILD_UNIX_TIME__: JSON.stringify(buildUnixTime),
+-            __EZBOOKKEEPING_BUILD_COMMIT_HASH__: JSON.stringify(git.short()),
++            __EZBOOKKEEPING_BUILD_COMMIT_HASH__: JSON.stringify(process.env['GITCOMMIT']),
+             __EZBOOKKEEPING_LICENSE__: JSON.stringify(licenseContent),
+             __EZBOOKKEEPING_THIRD_PARTY_LICENSES__: JSON.stringify(thirdPartyLicenseFile)
+         },

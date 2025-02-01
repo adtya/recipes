@@ -7,6 +7,7 @@ in
   meta.maintainers = with lib.maintainers; [ adtya ];
   options.recipes.ezbookkeeping = {
     enable = lib.mkEnableOption "ezbookkeeping";
+    package = lib.mkPackageOption pkgs "ezbookkeeping" "backend" { };
 
     config = lib.mkOption {
       type = lib.types.submodule {
@@ -52,7 +53,7 @@ in
             };
             static_root_path = lib.mkOption {
               type = lib.types.str;
-              default = "public";
+              default = "${pkgs.ezbookkeeping.frontend}";
               description = "Static file root path. The value can be relative or absolute path";
             };
           };
@@ -74,14 +75,6 @@ in
       default = null;
       example = [ "/etc/ezbookkeeping/env_file" ];
       description = "Files containing additional environment variables in the form KEY=VALUE";
-    };
-
-    package = lib.mkPackageOption pkgs "ezbookkeeping" { };
-    frontendPackage = lib.mkOption {
-      type = lib.types.package;
-      default = pkgs.ezbookkeeping-frontend;
-      defaultText = lib.literalExpression "pkgs.ezbookkeeping-frontend";
-      description = "Front end package to use.";
     };
   };
 
