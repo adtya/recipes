@@ -26,6 +26,13 @@ in
             readOnly = true;
             description = "Directory containing frontend assets.";
           };
+          storage.local_filesystem_path = lib.mkOption {
+            type = lib.types.str;
+            default = "/var/lib/ezbookkeeping";
+            readOnly = true;
+            description = "Data directory used by ezBookkeeping. it cannot be changed as it's using systemd's StateDirectory";
+          };
+
         };
       };
       default = { };
